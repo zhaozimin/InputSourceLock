@@ -71,11 +71,11 @@ async function handleActivate(request: Request, env: Env): Promise<Response> {
     ).bind(serial, device_id).first<{ token: string; expires_at: number }>();
 
     if (existing) {
-        // 设备已激活，续签 token
+        // 设备已激活，续签 token 并更新心跳
         const newToken = generateToken();
         await env.DB.prepare(
-            "UPDATE activations SET token = ?, expires_at = ? WHERE serial = ? AND device_id = ?"
-        ).bind(newToken, expiresAt, serial, device_id).run();
+            "UPDATE activations SET token = ?, expires_at = ?, last_heartbeat_at = ? WHERE serial = ? AND device_id = ?"
+        ).bind(newToken, expiresAt, now, serial, device_id).run();
         return jsonResponse({ token: newToken, expires_at: expiresAt });
     }
 
@@ -95,11 +95,11 @@ async function handleActivate(request: Request, env: Env): Promise<Response> {
         );
     }
 
-    // 4. 写入新激活记录
+    // 4. 写入新激活记录与心跳
     const token = generateToken();
     await env.DB.prepare(
-        "INSERT INTO activations (serial, device_id, token, activated_at, expires_at) VALUES (?, ?, ?, ?, ?)"
-    ).bind(serial, device_id, token, now, expiresAt).run();
+        "INSERT INTO activations (serial, device_id, token, activated_at, expires_at, last_heartbeat_at) VALUES (?, ?, ?, ?, ?, ?)"
+    ).bind(serial, device_id, token, now, expiresAt, now).run();
 
     // 5. 换机计数 +1（upsert）
     await env.DB.prepare(`
@@ -124,8 +124,8 @@ async function handleVerify(request: Request, env: Env): Promise<Response> {
     }
 
     const row = await env.DB.prepare(
-        "SELECT expires_at FROM activations WHERE token = ? AND device_id = ?"
-    ).bind(token, device_id).first<{ expires_at: number }>();
+        "SELECT serial, expires_at FROM activations WHERE token = ? AND device_id = ?"
+    ).bind(token, device_id).first<{ serial: string; expires_at: number }>();
 
     if (!row) {
         return jsonResponse({ valid: false }, 200);
@@ -134,6 +134,23 @@ async function handleVerify(request: Request, env: Env): Promise<Response> {
     const now = Math.floor(Date.now() / 1000);
     if (row.expires_at < now) {
         return jsonResponse({ valid: false, reason: "token_expired" }, 200);
+    }
+
+    // 更新最新心跳时间
+    await env.DB.prepare(
+        "UPDATE activations SET last_heartbeat_at = ? WHERE token = ? AND device_id = ?"
+    ).bind(now, token, device_id).run();
+
+    // 防盗版审查：检查过去 30 天内，该序列号有心跳的活跃设备数是否超过 2 台
+    const thirtyDaysAgo = now - 30 * 24 * 60 * 60;
+    const activeResult = await env.DB.prepare(
+        "SELECT COUNT(DISTINCT device_id) as active_count FROM activations WHERE serial = ? AND last_heartbeat_at >= ?"
+    ).bind(row.serial, thirtyDaysAgo).first<{ active_count: number }>();
+
+    const activeCount = activeResult?.active_count ?? 1;
+    if (activeCount > 2) {
+        // 发现被同一账号多端白嫖/恶意传播，直接封禁此请求
+        return jsonResponse({ valid: false, reason: "too_many_devices_active" }, 200);
     }
 
     return jsonResponse({ valid: true, expires_at: row.expires_at });

@@ -1,5 +1,6 @@
 import Foundation
 import CryptoKit
+import IOKit
 
 /// 授权管理器（服务器版）
 /// 负责：API 调用激活、设备 ID 管理、Token Keychain 持久化、试用期管理
@@ -35,9 +36,9 @@ final class LicenseManager: ObservableObject {
 
     // MARK: - 公共方法
 
-    /// 刷新授权状态（从 Keychain 读取 token 并校验有效期）
+    /// 刷新授权状态（从 UserDefaults 读取 token 并校验有效期）
     func refreshStatus() {
-        if let token = KeychainHelper.load(forKey: tokenKey),
+        if let token = UserDefaults.standard.string(forKey: tokenKey),
            !token.isEmpty {
             // 检查本地存储的 token 过期时间
             let expiry = UserDefaults.standard.double(forKey: tokenExpiryKey)
@@ -78,8 +79,8 @@ final class LicenseManager: ObservableObject {
             throw LicenseError.serverError("服务器返回数据异常")
         }
 
-        // 保存 token 到 Keychain 和过期时间到 UserDefaults
-        KeychainHelper.save(token, forKey: tokenKey)
+        // 保存 token 和过期时间到 UserDefaults
+        UserDefaults.standard.set(token, forKey: tokenKey)
         UserDefaults.standard.set(expiresAt, forKey: tokenExpiryKey)
 
         isActivated = true
@@ -104,7 +105,7 @@ final class LicenseManager: ObservableObject {
 
     /// 后台静默验证 token 是否仍有效（每 30 天调用一次）
     func verifyTokenIfNeeded() async {
-        guard let token = KeychainHelper.load(forKey: tokenKey), !token.isEmpty else { return }
+        guard let token = UserDefaults.standard.string(forKey: tokenKey), !token.isEmpty else { return }
 
         // 如果本地过期时间还剩超过 7 天，无需联网验证
         let expiry = UserDefaults.standard.double(forKey: tokenExpiryKey)
@@ -128,7 +129,7 @@ final class LicenseManager: ObservableObject {
                 isActivated = true
             } else {
                 // Token 已被服务器吊销
-                KeychainHelper.delete(forKey: tokenKey)
+                UserDefaults.standard.removeObject(forKey: tokenKey)
                 UserDefaults.standard.removeObject(forKey: tokenExpiryKey)
                 isActivated = false
                 trialDaysRemaining = computeTrialDaysRemaining()
@@ -140,14 +141,26 @@ final class LicenseManager: ObservableObject {
 
     // MARK: - 私有方法
 
-    /// 获取设备唯一 ID（首次生成后存入 Keychain，跨重装保持一致）
+    /// 获取设备唯一 ID（硬件序列号哈希存入 UserDefaults，脱敏且抗重装）
     private func getOrCreateDeviceID() -> String {
-        if let existing = KeychainHelper.load(forKey: deviceIDKey) {
+        if let existing = UserDefaults.standard.string(forKey: deviceIDKey) {
             return existing
         }
-        let newID = UUID().uuidString
-        KeychainHelper.save(newID, forKey: deviceIDKey)
-        return newID
+        
+        var serialNumber = UUID().uuidString
+        let platformExpert = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("IOPlatformExpertDevice"))
+        if platformExpert != 0 {
+            if let serial = IORegistryEntryCreateCFProperty(platformExpert, kIOPlatformSerialNumberKey as CFString, kCFAllocatorDefault, 0)?.takeUnretainedValue() as? String {
+                serialNumber = serial
+            }
+            IOObjectRelease(platformExpert)
+        }
+        
+        // 使用 SHA256 脱敏硬件序列号，避免明文收集
+        let hashedHardwareID = SHA256.hash(data: Data(serialNumber.utf8)).compactMap { String(format: "%02x", $0) }.joined()
+        
+        UserDefaults.standard.set(hashedHardwareID, forKey: deviceIDKey)
+        return hashedHardwareID
     }
 
     /// 计算剩余试用天数

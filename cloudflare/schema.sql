@@ -5,15 +5,16 @@ CREATE TABLE IF NOT EXISTS licenses (
     created_at  INTEGER NOT NULL DEFAULT (unixepoch())
 );
 
--- 设备激活记录表：记录每个序列号在哪些设备上激活
+-- 设备激活记录表：记录当前已激活的设备及 token 生命周期
 CREATE TABLE IF NOT EXISTS activations (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    serial       TEXT NOT NULL,
-    device_id    TEXT NOT NULL,
-    token        TEXT NOT NULL UNIQUE,
-    activated_at INTEGER NOT NULL DEFAULT (unixepoch()),
-    expires_at   INTEGER NOT NULL,
-    UNIQUE(serial, device_id)
+    serial            TEXT NOT NULL,
+    device_id         TEXT NOT NULL,
+    token             TEXT NOT NULL,
+    activated_at      INTEGER NOT NULL,
+    expires_at        INTEGER NOT NULL,
+    last_heartbeat_at INTEGER,
+    PRIMARY KEY (serial, device_id),
+    FOREIGN KEY(serial) REFERENCES licenses(serial) ON DELETE CASCADE
 );
 
 -- 换机次数统计：每年每个序列号最多换 2 次

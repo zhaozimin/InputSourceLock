@@ -65,7 +65,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @MainActor
     private func setupStatusItem() {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
 
         guard let button = statusItem?.button else { return }
         updateStatusItemIcon()

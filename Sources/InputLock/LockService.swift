@@ -23,8 +23,13 @@ final class LockService: ObservableObject, @unchecked Sendable {
     @MainActor
     private var lockedSource: TISInputSource?
 
+    /// 记录最后一次活跃 App 发生切换的时间，用于判定系统自动切换还是用户手动切换
+    @MainActor
+    private var lastAppChangeTime: Date = .distantPast
+
     /// 通知观察者 token
     private var observer: NSObjectProtocol?
+    private var workspaceObserver: NSObjectProtocol?
 
     // nonisolated init，可在任意上下文中调用
     init() {
@@ -66,6 +71,17 @@ final class LockService: ObservableObject, @unchecked Sendable {
                 await self.handleInputSourceChanged()
             }
         }
+        
+        // 监听前台应用切换事件
+        workspaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.lastAppChangeTime = Date()
+            }
+        }
     }
 
     /// 输入法切换回调（在 MainActor 上执行）
@@ -77,15 +93,29 @@ final class LockService: ObservableObject, @unchecked Sendable {
 
         let currentName = InputSourceManager.currentInputSourceName()
         if currentName != lockedSourceName {
-            // 延迟 50ms 执行，避免与系统切换动作冲突
-            try? await Task.sleep(for: .milliseconds(50))
-            InputSourceManager.selectInputSource(locked)
+            // 智能判定：如果刚切换完 App（< 0.5s），这很可能是 macOS 的"自动切换到文档输入源"机制强行切的
+            // 此时我们要拉回锁定的输入法。
+            // 否则（切换 App 已经过了很久），说明你是通过 Cmd+Space 手动切换的，那我们顺从你的意愿，把新的输入法作为锁定的目标！
+            if Date().timeIntervalSince(lastAppChangeTime) < 0.5 {
+                // 系统自动切换的 -> 我们不答应，强行拉回
+                try? await Task.sleep(for: .milliseconds(50))
+                InputSourceManager.selectInputSource(locked)
+            } else {
+                // 用户手动切换的 -> 更新最新的锁定目标
+                if let newSource = InputSourceManager.currentInputSourceRef() {
+                    lockedSource = newSource
+                    lockedSourceName = currentName
+                }
+            }
         }
     }
 
     deinit {
         if let observer {
             DistributedNotificationCenter.default().removeObserver(observer)
+        }
+        if let workspaceObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(workspaceObserver)
         }
     }
 }
