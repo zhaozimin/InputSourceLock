@@ -89,4 +89,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             popover.contentViewController?.view.window?.makeKey()
         }
     }
+
+    @MainActor
+    func closePopover(sender: Any?) {
+        popover?.performClose(sender)
+    }
 }

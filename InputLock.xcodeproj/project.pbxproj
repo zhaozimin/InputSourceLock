@@ -15,6 +15,7 @@
 		3B6CAF5F24D540558C155725 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A32E22EFC8ADA8F86B218595 /* KeychainHelper.swift */; };
 		42717F013C7FE1287A6ABD52 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D6207A4F8EE53D434F8E0B /* AppDelegate.swift */; };
 		5AD5E45738971834C91901F5 /* LockService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5716841369D4A8F3AC7E68E /* LockService.swift */; };
+		736DA0DA4CFC8263AD46B3F1 /* ActivationWindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7DB5E90D404DB87D035A2B2 /* ActivationWindowManager.swift */; };
 		8ACA2477FFE5E53F6F269891 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD39E1638B8EC16BBA519D66 /* main.swift */; };
 		A306548525481B81C185E18C /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E82CE99A1F001AE89FBEDEE6 /* MenuBarView.swift */; };
 		F6F5C6AB86873EFD9735469E /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ED9CDEE8BF8B659DB9DF5D59 /* ServiceManagement.framework */; };
@@ -27,6 +28,7 @@
 		8B9359F83347BA745BA65C03 /* InputSourceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputSourceManager.swift; sourceTree = "<group>"; };
 		A32E22EFC8ADA8F86B218595 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
 		A5716841369D4A8F3AC7E68E /* LockService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockService.swift; sourceTree = "<group>"; };
+		A7DB5E90D404DB87D035A2B2 /* ActivationWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivationWindowManager.swift; sourceTree = "<group>"; };
 		AF71BC35163981651A9EC260 /* LoginItemManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItemManager.swift; sourceTree = "<group>"; };
 		C6A94E173A3C76C4B51F7495 /* ActivationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivationView.swift; sourceTree = "<group>"; };
 		CD39E1638B8EC16BBA519D66 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
@@ -61,6 +63,7 @@
 			isa = PBXGroup;
 			children = (
 				C6A94E173A3C76C4B51F7495 /* ActivationView.swift */,
+				A7DB5E90D404DB87D035A2B2 /* ActivationWindowManager.swift */,
 				14D6207A4F8EE53D434F8E0B /* AppDelegate.swift */,
 				8B9359F83347BA745BA65C03 /* InputSourceManager.swift */,
 				A32E22EFC8ADA8F86B218595 /* KeychainHelper.swift */,
@@ -159,6 +162,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				11A9B9E6ACE06C1EBFE623C8 /* ActivationView.swift in Sources */,
+				736DA0DA4CFC8263AD46B3F1 /* ActivationWindowManager.swift in Sources */,
 				42717F013C7FE1287A6ABD52 /* AppDelegate.swift in Sources */,
 				0330230E689324C094AB9E86 /* InputSourceManager.swift in Sources */,
 				3B6CAF5F24D540558C155725 /* KeychainHelper.swift in Sources */,

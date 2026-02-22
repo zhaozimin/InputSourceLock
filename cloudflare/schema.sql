@@ -1,7 +1,7 @@
 -- 序列号主表：记录每个序列号绑定的邮箱
 CREATE TABLE IF NOT EXISTS licenses (
     serial      TEXT PRIMARY KEY,
-    email       TEXT NOT NULL UNIQUE,
+    email       TEXT UNIQUE,
     created_at  INTEGER NOT NULL DEFAULT (unixepoch())
 );
 

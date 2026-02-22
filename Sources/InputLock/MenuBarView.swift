@@ -7,9 +7,7 @@ struct MenuBarView: View {
     @ObservedObject var lockService: LockService
     @ObservedObject var loginItemManager: LoginItemManager
     @ObservedObject var licenseManager: LicenseManager
-
-    /// 控制激活弹窗的显示
-    @State private var showActivationSheet: Bool = false
+    @Environment(\.openURL) var openURL
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -130,9 +128,8 @@ struct MenuBarView: View {
         }
         .frame(width: 240)
         .background(.regularMaterial)
-        .sheet(isPresented: $showActivationSheet) {
-            ActivationView(licenseManager: licenseManager)
-        }
+        // 底部留白
+        .padding(.bottom, 6)
     }
 
     // MARK: - 授权状态行
@@ -164,8 +161,14 @@ struct MenuBarView: View {
                         .foregroundStyle(.orange)
                 }
                 Spacer()
-                Button("激活") {
-                    showActivationSheet = true
+               // 未激活，点击打开独立激活窗口
+                Button {
+                    if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
+                        appDelegate.closePopover(sender: nil)
+                    }
+                    ActivationWindowManager.shared.showWindow(licenseManager: licenseManager)
+                } label: {
+                    Text("激活")
                 }
                 .buttonStyle(.bordered)
                 .font(.system(size: 11))
@@ -186,7 +189,10 @@ struct MenuBarView: View {
                 }
                 Spacer()
                 Button("立即激活") {
-                    showActivationSheet = true
+                    if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
+                        appDelegate.closePopover(sender: nil)
+                    }
+                    ActivationWindowManager.shared.showWindow(licenseManager: licenseManager)
                 }
                 .buttonStyle(.borderedProminent)
                 .font(.system(size: 11))

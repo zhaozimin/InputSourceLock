@@ -42,16 +42,24 @@ async function handleActivate(request: Request, env: Env): Promise<Response> {
         return jsonResponse({ error: "缺少必要参数" }, 400);
     }
 
-    // 1. 查询序列号是否存在且邮箱匹配
+    // 1. 查询序列号是否存在
     const license = await env.DB.prepare(
         "SELECT email FROM licenses WHERE serial = ?"
-    ).bind(serial).first<{ email: string }>();
+    ).bind(serial).first<{ email: string | null }>();
 
     if (!license) {
         return jsonResponse({ error: "序列号不存在" }, 404);
     }
-    if (license.email.toLowerCase() !== email.toLowerCase()) {
-        return jsonResponse({ error: "邮箱与序列号不匹配" }, 403);
+
+    // 检查邮箱绑定状态
+    if (!license.email) {
+        // 首次激活：绑定邮箱到此序列号
+        await env.DB.prepare(
+            "UPDATE licenses SET email = ? WHERE serial = ?"
+        ).bind(email, serial).run();
+    } else if (license.email.toLowerCase() !== email.toLowerCase()) {
+        // 已被绑定且邮箱不匹配
+        return jsonResponse({ error: "该序列号已绑定至其他邮箱" }, 403);
     }
 
     const now = Math.floor(Date.now() / 1000);
