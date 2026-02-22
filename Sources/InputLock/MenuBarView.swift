@@ -125,11 +125,10 @@ struct MenuBarView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
             .contentShape(Rectangle())
+            Spacer()
         }
-        .frame(width: 240)
+        .frame(width: 240, height: 260, alignment: .top)
         .background(.regularMaterial)
-        // 底部留白
-        .padding(.bottom, 6)
     }
 
     // MARK: - 授权状态行
