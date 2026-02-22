@@ -1,0 +1,40 @@
+{
+  "": {
+    "swift-dependencies": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/master.swiftdeps"
+  },
+  "/Volumes/GuangTou/输入法锁定/Sources/InputLock/AppDelegate.swift": {
+    "dependencies": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/AppDelegate.d",
+    "object": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/AppDelegate.swift.o",
+    "swiftmodule": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/AppDelegate~partial.swiftmodule",
+    "swift-dependencies": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/AppDelegate.swiftdeps",
+    "diagnostics": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/AppDelegate.dia"
+  },
+  "/Volumes/GuangTou/输入法锁定/Sources/InputLock/InputSourceManager.swift": {
+    "dependencies": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/InputSourceManager.d",
+    "object": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/InputSourceManager.swift.o",
+    "swiftmodule": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/InputSourceManager~partial.swiftmodule",
+    "swift-dependencies": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/InputSourceManager.swiftdeps",
+    "diagnostics": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/InputSourceManager.dia"
+  },
+  "/Volumes/GuangTou/输入法锁定/Sources/InputLock/LockService.swift": {
+    "dependencies": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/LockService.d",
+    "object": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/LockService.swift.o",
+    "swiftmodule": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/LockService~partial.swiftmodule",
+    "swift-dependencies": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/LockService.swiftdeps",
+    "diagnostics": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/LockService.dia"
+  },
+  "/Volumes/GuangTou/输入法锁定/Sources/InputLock/MenuBarView.swift": {
+    "dependencies": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/MenuBarView.d",
+    "object": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/MenuBarView.swift.o",
+    "swiftmodule": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/MenuBarView~partial.swiftmodule",
+    "swift-dependencies": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/MenuBarView.swiftdeps",
+    "diagnostics": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/MenuBarView.dia"
+  },
+  "/Volumes/GuangTou/输入法锁定/Sources/InputLock/main.swift": {
+    "dependencies": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/main.d",
+    "object": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/main.swift.o",
+    "swiftmodule": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/main~partial.swiftmodule",
+    "swift-dependencies": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/main.swiftdeps",
+    "diagnostics": "/Volumes/GuangTou/输入法锁定/.build/arm64-apple-macosx/debug/InputLock.build/main.dia"
+  }
+}
