@@ -1,21 +1,30 @@
 #!/bin/bash
 # ============================================================
-# InputLock 打包脚本
-# 用途：将 Swift Package 编译产物打包为独立 .app bundle
-# 运行：bash scripts/package_app.sh
+# InputLock 打包 & 安装脚本
+# 用法：
+#   bash scripts/package_app.sh           # 只打包
+#   bash scripts/package_app.sh --install  # 打包并安装到 /Applications/
 # ============================================================
 
 set -euo pipefail
 
-# ── 配置 ──────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 APP_NAME="InputLock"
 BUNDLE_ID="com.local.inputlock"
-APP_BUNDLE="$PROJECT_ROOT/$APP_NAME.app"
-# ────────────────────────────────────────────────────────────
+VERSION="1.0.0"
+BUILD_NUMBER="1"
+MIN_OS="13.0"
 
-echo "🔨 [1/5] 编译 Release 版本..."
+# 在系统本地磁盘的临时目录中组装 bundle，避免 ExFAT 问题
+STAGING_DIR="$(mktemp -d)"
+APP_BUNDLE="$STAGING_DIR/$APP_NAME.app"
+INSTALL_FLAG="${1:-}"
+
+cleanup() { rm -rf "$STAGING_DIR"; }
+trap cleanup EXIT
+
+echo "🔨 [1/6] 编译 Release 版本..."
 cd "$PROJECT_ROOT"
 swift build -c release 2>&1
 
@@ -25,31 +34,61 @@ if [ ! -f "$BINARY_PATH" ]; then
     exit 1
 fi
 
-echo "📁 [2/5] 创建 .app 目录结构..."
-rm -rf "$APP_BUNDLE"
+echo "📁 [2/6] 创建 .app 目录结构（临时目录）..."
 mkdir -p "$APP_BUNDLE/Contents/MacOS"
 mkdir -p "$APP_BUNDLE/Contents/Resources"
 
-echo "📋 [3/5] 拷贝文件..."
-# 二进制
+echo "📋 [3/6] 拷贝二进制文件..."
 cp "$BINARY_PATH" "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
 chmod +x "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
-
-# Info.plist
-cp "$PROJECT_ROOT/Resources/Info.plist" "$APP_BUNDLE/Contents/Info.plist"
-
-# 写入 PkgInfo（标准 .app bundle 标志）
 printf "APPL????" > "$APP_BUNDLE/Contents/PkgInfo"
 
-echo "✍️  [4/5] Ad-hoc 代码签名（本地开发用）..."
+echo "📝 [4/6] 生成展开后的 Info.plist..."
+# 用 PlistBuddy 直接生成，避免 Xcode 变量未展开的问题
+PLIST="$APP_BUNDLE/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Add :CFBundleExecutable        string $APP_NAME"      "$PLIST"
+/usr/libexec/PlistBuddy -c "Add :CFBundleName              string $APP_NAME"      "$PLIST"
+/usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName       string 输入法锁定"     "$PLIST"
+/usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier        string $BUNDLE_ID"     "$PLIST"
+/usr/libexec/PlistBuddy -c "Add :CFBundleVersion           string $BUILD_NUMBER"  "$PLIST"
+/usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string $VERSION"      "$PLIST"
+/usr/libexec/PlistBuddy -c "Add :CFBundlePackageType       string APPL"           "$PLIST"
+/usr/libexec/PlistBuddy -c "Add :LSMinimumSystemVersion    string $MIN_OS"        "$PLIST"
+/usr/libexec/PlistBuddy -c "Add :LSUIElement               bool   true"           "$PLIST"
+/usr/libexec/PlistBuddy -c "Add :NSPrincipalClass          string NSApplication"  "$PLIST"
+/usr/libexec/PlistBuddy -c "Add :NSHumanReadableCopyright  string Copyright © 2026" "$PLIST"
+
+echo "✍️  [5/6] Ad-hoc 代码签名..."
 codesign --sign - --force --deep "$APP_BUNDLE"
 
-echo "✅ [5/5] 打包完成："
-echo "   $APP_BUNDLE"
-echo ""
-echo "💡 提示："
-echo "   - 首次运行需授予「辅助功能」权限（系统设置 > 隐私与安全性 > 辅助功能）"
-echo "   - 如需安装到应用程序文件夹：cp -R '$APP_BUNDLE' /Applications/"
-echo ""
-echo "🚀 正在启动应用..."
-open "$APP_BUNDLE"
+echo "✅ [6/6] 打包完成"
+
+# ── 安装到 /Applications（可选）────────────────────────────
+OUTPUT_DIR="$PROJECT_ROOT"
+if [ "$INSTALL_FLAG" = "--install" ]; then
+    DEST="/Applications/$APP_NAME.app"
+    echo ""
+    echo "📦 正在安装到 /Applications/..."
+    pkill -x "$APP_NAME" 2>/dev/null || true
+    sleep 0.5
+    rm -rf "$DEST"
+    ditto "$APP_BUNDLE" "$DEST"
+    echo "✅ 已安装：$DEST"
+    echo ""
+    echo "🚀 启动应用..."
+    open "$DEST"
+    echo ""
+    echo "💡 提示："
+    echo "   1. 首次运行请在「系统设置 → 隐私与安全性 → 辅助功能」中授权 InputLock"
+    echo "   2. 点击菜单栏图标，开启「开机自启」以实现登录后自动启动"
+else
+    # 同时在项目目录保留一份（供参考）
+    ditto "$APP_BUNDLE" "$OUTPUT_DIR/$APP_NAME.app"
+    echo ""
+    echo "📍 已输出到：$OUTPUT_DIR/$APP_NAME.app"
+    echo ""
+    echo "💡 安装到应用程序文件夹：bash scripts/package_app.sh --install"
+    echo ""
+    echo "🚀 正在启动..."
+    open "$OUTPUT_DIR/$APP_NAME.app"
+fi
