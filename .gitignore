@@ -1,0 +1,21 @@
+# Swift Package Manager 构建产物
+.build/
+*.o
+*.a
+*.d
+
+# macOS 系统文件
+.DS_Store
+._*
+
+# Xcode
+*.xcworkspace
+*.xcodeproj
+DerivedData/
+.swiftpm/
+
+# 敏感信息（禁止提交）
+*.pem
+*.p8
+*.key
+Secrets.swift
