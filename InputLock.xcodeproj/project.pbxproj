@@ -7,13 +7,25 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0330230E689324C094AB9E86 /* InputSourceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B9359F83347BA745BA65C03 /* InputSourceManager.swift */; };
 		0E9D3BE4C9C689F4A975E9F0 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3A9A6EC46BD8D0BB54CE7C47 /* Carbon.framework */; };
+		191D8E5ADCC99C190E41B3C8 /* LoginItemManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF71BC35163981651A9EC260 /* LoginItemManager.swift */; };
+		42717F013C7FE1287A6ABD52 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D6207A4F8EE53D434F8E0B /* AppDelegate.swift */; };
+		5AD5E45738971834C91901F5 /* LockService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5716841369D4A8F3AC7E68E /* LockService.swift */; };
+		8ACA2477FFE5E53F6F269891 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD39E1638B8EC16BBA519D66 /* main.swift */; };
+		A306548525481B81C185E18C /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E82CE99A1F001AE89FBEDEE6 /* MenuBarView.swift */; };
 		F6F5C6AB86873EFD9735469E /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ED9CDEE8BF8B659DB9DF5D59 /* ServiceManagement.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		14D6207A4F8EE53D434F8E0B /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		182E65E9301AA4CF42EC1A7F /* InputLock.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = InputLock.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3A9A6EC46BD8D0BB54CE7C47 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
+		8B9359F83347BA745BA65C03 /* InputSourceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputSourceManager.swift; sourceTree = "<group>"; };
+		A5716841369D4A8F3AC7E68E /* LockService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockService.swift; sourceTree = "<group>"; };
+		AF71BC35163981651A9EC260 /* LoginItemManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItemManager.swift; sourceTree = "<group>"; };
+		CD39E1638B8EC16BBA519D66 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		E82CE99A1F001AE89FBEDEE6 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
 		ED9CDEE8BF8B659DB9DF5D59 /* ServiceManagement.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ServiceManagement.framework; path = System/Library/Frameworks/ServiceManagement.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -42,6 +54,12 @@
 		32828E00C84F46D36D6844C5 /* InputLock */ = {
 			isa = PBXGroup;
 			children = (
+				14D6207A4F8EE53D434F8E0B /* AppDelegate.swift */,
+				8B9359F83347BA745BA65C03 /* InputSourceManager.swift */,
+				A5716841369D4A8F3AC7E68E /* LockService.swift */,
+				AF71BC35163981651A9EC260 /* LoginItemManager.swift */,
+				CD39E1638B8EC16BBA519D66 /* main.swift */,
+				E82CE99A1F001AE89FBEDEE6 /* MenuBarView.swift */,
 			);
 			path = InputLock;
 			sourceTree = "<group>";
@@ -99,7 +117,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 1600;
+				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					DDB1B71733F5363586583D0F = {
 						DevelopmentTeam = "";
@@ -131,6 +149,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				42717F013C7FE1287A6ABD52 /* AppDelegate.swift in Sources */,
+				0330230E689324C094AB9E86 /* InputSourceManager.swift in Sources */,
+				5AD5E45738971834C91901F5 /* LockService.swift in Sources */,
+				191D8E5ADCC99C190E41B3C8 /* LoginItemManager.swift in Sources */,
+				A306548525481B81C185E18C /* MenuBarView.swift in Sources */,
+				8ACA2477FFE5E53F6F269891 /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -192,7 +216,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.local.inputlock;
-				PRODUCT_NAME = InputLock;
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
@@ -262,7 +286,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.local.inputlock;
-				PRODUCT_NAME = InputLock;
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";

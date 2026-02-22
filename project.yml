@@ -4,23 +4,19 @@ options:
   bundleIdPrefix: com.local
   deploymentTarget:
     macOS: "13.0"
-  xcodeVersion: "16.0"
   createIntermediateGroups: true
 
 settings:
-  SWIFT_VERSION: "6.0"
-  MACOSX_DEPLOYMENT_TARGET: "13.0"
-  PRODUCT_BUNDLE_IDENTIFIER: com.local.inputlock
-  PRODUCT_NAME: InputLock
-  MARKETING_VERSION: "1.0.0"
-  CURRENT_PROJECT_VERSION: "1"
-  # 关闭沙盒，允许使用 Carbon TIS API
-  ENABLE_APP_SANDBOX: NO
-  # 代码签名（本地测试用）
-  CODE_SIGN_IDENTITY: "-"
-  CODE_SIGN_STYLE: Manual
-  # 不需要开发者账号也可运行
-  DEVELOPMENT_TEAM: ""
+  base:
+    SWIFT_VERSION: "6.0"
+    MACOSX_DEPLOYMENT_TARGET: "13.0"
+    PRODUCT_BUNDLE_IDENTIFIER: com.local.inputlock
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    ENABLE_APP_SANDBOX: NO
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ""
 
 targets:
   InputLock:
@@ -28,10 +24,9 @@ targets:
     platform: macOS
     sources:
       - path: Sources/InputLock
-        excludes:
-          - "**/.*"
-    resources:
-      - path: Resources/Info.plist
+        type: group
+        includes:
+          - "*.swift"
     info:
       path: Resources/Info.plist
     entitlements:
@@ -46,13 +41,3 @@ targets:
     scheme:
       environmentVariables:
         OS_ACTIVITY_MODE: disable
-
-schemes:
-  InputLock:
-    build:
-      targets:
-        InputLock: all
-    run:
-      config: Debug
-    archive:
-      config: Release
