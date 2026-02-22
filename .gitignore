@@ -8,11 +8,14 @@
 .DS_Store
 ._*
 
-# Xcode
+# Xcode 用户专属文件（不提交）
 *.xcworkspace
-*.xcodeproj
 DerivedData/
 .swiftpm/
+xcuserdata/
+*.xcodeproj/project.xcworkspace
+*.xcodeproj/xcuserdata/
+# xcodeproj 本身纳入追踪，方便直接 clone 后使用
 
 # 敏感信息（禁止提交）
 *.pem
