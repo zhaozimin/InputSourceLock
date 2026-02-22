@@ -1,41 +1,31 @@
 import Foundation
 import CryptoKit
 
-/// 授权管理器：负责序列号验证、试用期管理、授权状态持久化
-/// 所有公共属性在 @MainActor 上下文中访问，确保 UI 线程安全
+/// 授权管理器（服务器版）
+/// 负责：API 调用激活、设备 ID 管理、Token Keychain 持久化、试用期管理
 @MainActor
 final class LicenseManager: ObservableObject {
 
     // MARK: - 常量
 
-    /// 试用天数
+    /// ⚠️ 部署 Workers 后，将此 URL 替换为你的 Workers 地址
+    static let apiBaseURL = "https://inputlock-license.YOUR-SUBDOMAIN.workers.dev"
+
     private let trialDurationDays = 7
-
-    /// Keychain 中保存激活序列号的 key
-    private let keychainKey = "com.local.inputlock.licenseKey"
-
-    /// UserDefaults 中保存首次启动日期的 key
+    private let tokenKey      = "com.local.inputlock.authToken"
+    private let deviceIDKey   = "com.local.inputlock.deviceID"
+    private let tokenExpiryKey = "InputLock_TokenExpiry"
     private let firstLaunchKey = "InputLock_FirstLaunchDate"
 
     // MARK: - 已发布状态
 
-    /// 是否已通过序列号永久激活
     @Published private(set) var isActivated: Bool = false
-
-    /// 剩余试用天数（已激活时为 0）
     @Published private(set) var trialDaysRemaining: Int = 0
 
     // MARK: - 计算属性
 
-    /// 是否处于试用期（未过期且未激活）
-    var isInTrial: Bool {
-        !isActivated && trialDaysRemaining > 0
-    }
-
-    /// 是否可以使用锁定功能（已激活 或 仍在试用期内）
-    var canUseLockFeature: Bool {
-        isActivated || isInTrial
-    }
+    var isInTrial: Bool { !isActivated && trialDaysRemaining > 0 }
+    var canUseLockFeature: Bool { isActivated || isInTrial }
 
     // MARK: - 初始化
 
@@ -45,140 +35,170 @@ final class LicenseManager: ObservableObject {
 
     // MARK: - 公共方法
 
-    /// 刷新授权状态（从 Keychain 和 UserDefaults 读取）
+    /// 刷新授权状态（从 Keychain 读取 token 并校验有效期）
     func refreshStatus() {
-        // 1. 检查 Keychain 是否存有有效的激活序列号
-        if let savedKey = KeychainHelper.load(forKey: keychainKey),
-           validate(serialKey: savedKey) {
-            isActivated = true
-            trialDaysRemaining = 0
-            return
+        if let token = KeychainHelper.load(forKey: tokenKey),
+           !token.isEmpty {
+            // 检查本地存储的 token 过期时间
+            let expiry = UserDefaults.standard.double(forKey: tokenExpiryKey)
+            let now = Date().timeIntervalSince1970
+            if expiry > now {
+                isActivated = true
+                trialDaysRemaining = 0
+                return
+            }
         }
-
-        // 2. 未激活，计算试用剩余天数
         isActivated = false
         trialDaysRemaining = computeTrialDaysRemaining()
     }
 
-    /// 验证序列号格式是否合法（本地 HMAC 验证，无需联网）
-    /// - Parameter serialKey: 用户输入的序列号，格式 XXXX-XXXX-XXXX-XXXX
-    /// - Returns: 序列号是否有效
-    func validate(serialKey: String) -> Bool {
-        // 1. 规范化输入：去空格、转大写、去掉 "-"
-        let cleaned = serialKey
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .uppercased()
-            .replacingOccurrences(of: " ", with: "")
+    /// 激活：向服务器发送邮箱+序列号，成功后本地保存 token
+    func activate(email: String, serial: String) async throws {
+        let deviceID = getOrCreateDeviceID()
+        let body: [String: String] = [
+            "email": email,
+            "serial": serial.uppercased(),
+            "device_id": deviceID
+        ]
 
-        let parts = cleaned.components(separatedBy: "-")
-        guard parts.count == 4,
-              parts.allSatisfy({ $0.count == 4 }) else {
-            return false
+        let data = try await postRequest(path: "/activate", body: body)
+
+        struct ActivateResponse: Decodable {
+            let token: String?
+            let expires_at: Double?
+            let error: String?
         }
 
-        // 2. 还原用户码 = 第1段 + 第2段
-        let userCode = parts[0] + parts[1]
+        let response = try JSONDecoder().decode(ActivateResponse.self, from: data)
 
-        // 3. 计算期望签名
-        guard let expectedSig = hmacSignature(for: userCode) else {
-            return false
+        if let errorMsg = response.error {
+            throw LicenseError.serverError(errorMsg)
+        }
+        guard let token = response.token, let expiresAt = response.expires_at else {
+            throw LicenseError.serverError("服务器返回数据异常")
         }
 
-        // 4. 比对签名（第3段 + 第4段 与期望签名前8位）
-        let providedSig = parts[2] + parts[3]
-        return providedSig == expectedSig
+        // 保存 token 到 Keychain 和过期时间到 UserDefaults
+        KeychainHelper.save(token, forKey: tokenKey)
+        UserDefaults.standard.set(expiresAt, forKey: tokenExpiryKey)
+
+        isActivated = true
+        trialDaysRemaining = 0
     }
 
-    /// 激活应用并将序列号保存至 Keychain
-    /// - Parameter serialKey: 经过验证的合法序列号
-    /// - Throws: 若序列号无效，抛出 LicenseError.invalidKey
-    func activate(serialKey: String) throws {
-        guard validate(serialKey: serialKey) else {
-            throw LicenseError.invalidKey
+    /// 找回序列号（只需邮箱，服务器发邮件）
+    func recoverKey(email: String) async throws {
+        let body = ["email": email]
+        let data = try await postRequest(path: "/recover", body: body)
+
+        struct RecoverResponse: Decodable {
+            let status: String?
+            let error: String?
         }
 
-        let normalized = serialKey
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .uppercased()
-
-        guard KeychainHelper.save(normalized, forKey: keychainKey) else {
-            throw LicenseError.keychainWriteFailed
+        let response = try JSONDecoder().decode(RecoverResponse.self, from: data)
+        if let errorMsg = response.error {
+            throw LicenseError.serverError(errorMsg)
         }
+    }
 
-        refreshStatus()
+    /// 后台静默验证 token 是否仍有效（每 30 天调用一次）
+    func verifyTokenIfNeeded() async {
+        guard let token = KeychainHelper.load(forKey: tokenKey), !token.isEmpty else { return }
+
+        // 如果本地过期时间还剩超过 7 天，无需联网验证
+        let expiry = UserDefaults.standard.double(forKey: tokenExpiryKey)
+        let sevenDays: Double = 7 * 24 * 60 * 60
+        if expiry - Date().timeIntervalSince1970 > sevenDays { return }
+
+        // 临近过期，联网续签
+        do {
+            let deviceID = getOrCreateDeviceID()
+            let body = ["token": token, "device_id": deviceID]
+            let data = try await postRequest(path: "/verify", body: body)
+
+            struct VerifyResponse: Decodable {
+                let valid: Bool
+                let expires_at: Double?
+            }
+
+            let response = try JSONDecoder().decode(VerifyResponse.self, from: data)
+            if response.valid, let newExpiry = response.expires_at {
+                UserDefaults.standard.set(newExpiry, forKey: tokenExpiryKey)
+                isActivated = true
+            } else {
+                // Token 已被服务器吊销
+                KeychainHelper.delete(forKey: tokenKey)
+                UserDefaults.standard.removeObject(forKey: tokenExpiryKey)
+                isActivated = false
+                trialDaysRemaining = computeTrialDaysRemaining()
+            }
+        } catch {
+            // 网络错误时不修改本地状态（容忍离线）
+        }
     }
 
     // MARK: - 私有方法
 
-    /// 计算剩余试用天数，首次运行时记录启动日期到 UserDefaults
+    /// 获取设备唯一 ID（首次生成后存入 Keychain，跨重装保持一致）
+    private func getOrCreateDeviceID() -> String {
+        if let existing = KeychainHelper.load(forKey: deviceIDKey) {
+            return existing
+        }
+        let newID = UUID().uuidString
+        KeychainHelper.save(newID, forKey: deviceIDKey)
+        return newID
+    }
+
+    /// 计算剩余试用天数
     private func computeTrialDaysRemaining() -> Int {
         let defaults = UserDefaults.standard
-
-        // 如果未记录首次启动时间，则记录当前时间
         if defaults.object(forKey: firstLaunchKey) == nil {
             defaults.set(Date(), forKey: firstLaunchKey)
         }
-
         guard let firstLaunch = defaults.object(forKey: firstLaunchKey) as? Date else {
             return trialDurationDays
         }
-
-        let daysPassed = Calendar.current.dateComponents(
-            [.day],
-            from: firstLaunch,
-            to: Date()
-        ).day ?? 0
-
+        let daysPassed = Calendar.current.dateComponents([.day], from: firstLaunch, to: Date()).day ?? 0
         return max(0, trialDurationDays - daysPassed)
     }
 
-    /// 使用 HMAC-SHA256 计算用户码的签名（取前 8 位十六进制大写）
-    /// - Parameter userCode: 16 位十六进制用户码
-    /// - Returns: 8 位大写十六进制签名，失败返回 nil
-    private func hmacSignature(for userCode: String) -> String? {
-        // HMAC 密钥：通过字节数组混淆，避免明文字符串出现在二进制中
-        // ⚠️ 此密钥对应字符串，请勿修改，否则已发出的序列号将全部失效
-        let keyBytes: [UInt8] = [
-            73, 110, 112, 117, 116, 76, 111, 99, 107, 45,
-            55, 102, 51, 97, 45, 57, 98, 50, 99, 45,
-            52, 100, 56, 102, 45, 97, 51, 99, 55, 45,
-            50, 48, 50, 52, 75, 101, 121
-        ]
-
-        let keyData = Data(bytes: keyBytes, count: keyBytes.count)
-        guard let messageData = userCode.data(using: .utf8) else {
-            return nil
+    /// 通用 POST 请求
+    private func postRequest(path: String, body: [String: String]) async throws -> Data {
+        guard let url = URL(string: LicenseManager.apiBaseURL + path) else {
+            throw LicenseError.serverError("API 地址无效")
         }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 15
+        request.httpBody = try JSONEncoder().encode(body)
 
-        let symmetricKey = SymmetricKey(data: keyData)
-        let mac = HMAC<SHA256>.authenticationCode(
-            for: messageData,
-            using: symmetricKey
-        )
+        let (data, response) = try await URLSession.shared.data(for: request)
 
-        // 取摘要的前 4 字节 = 8 位十六进制
-        let hexString = mac.withUnsafeBytes { bytes -> String in
-            bytes.prefix(4)
-                .map { String(format: "%02X", $0) }
-                .joined()
+        guard let http = response as? HTTPURLResponse else {
+            throw LicenseError.networkError
         }
-
-        return hexString
+        // 4xx 错误也解析返回，交给调用方处理 error 字段
+        if http.statusCode >= 500 {
+            throw LicenseError.serverError("服务器内部错误，请稍后重试")
+        }
+        return data
     }
 }
 
 // MARK: - 授权错误类型
 
 enum LicenseError: LocalizedError {
-    case invalidKey
-    case keychainWriteFailed
+    case networkError
+    case serverError(String)
 
     var errorDescription: String? {
         switch self {
-        case .invalidKey:
-            return "序列号无效，请检查输入后重试"
-        case .keychainWriteFailed:
-            return "激活信息写入失败，请重试"
+        case .networkError:
+            return "网络连接失败，请检查网络后重试"
+        case .serverError(let msg):
+            return msg
         }
     }
 }

@@ -24,6 +24,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         setupStatusItem()
         setupPopover()
+
+        // 后台静默验证 token（网络可用时自动续签）
+        Task {
+            await licManager.verifyTokenIfNeeded()
+        }
     }
 
     // MARK: - 菜单栏图标设置

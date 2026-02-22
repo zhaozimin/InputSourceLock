@@ -1,0 +1,15 @@
+name = "inputlock-license"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "inputlock-db"
+database_id = "PLACEHOLDER_REPLACE_AFTER_CREATE"
+
+[vars]
+FROM_EMAIL = "noreply@yourdomain.com"
+MAX_DEVICE_CHANGES_PER_YEAR = "2"
+
+# 部署后在 Cloudflare Dashboard -> Workers -> Settings -> Variables 中添加:
+# RESEND_API_KEY = "re_xxxx..."  (设为 Secret，勿明文写在此文件)
