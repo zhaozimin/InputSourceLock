@@ -76,6 +76,16 @@ struct ActivationView: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(.blue)
                 .font(.system(size: 12))
+                
+                Button("购买激活码") {
+                    if let url = URL(string: "https://cklaozhao.me/#/post/ck20260222224940216") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.blue)
+                .font(.system(size: 12))
+                .padding(.leading, 8)
 
                 Spacer()
 
