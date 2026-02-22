@@ -8,10 +8,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
     private let lockService = LockService()
+    // 延迟初始化，在 @MainActor 的 applicationDidFinishLaunching 中赋值
+    private var loginItemManager: LoginItemManager?
     private var cancellables = Set<AnyCancellable>()
 
     @MainActor
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // 在 @MainActor 上下文中初始化 LoginItemManager
+        let manager = LoginItemManager()
+        loginItemManager = manager
+        manager.refreshStatus()
         setupStatusItem()
         setupPopover()
     }
@@ -27,7 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         button.action = #selector(togglePopover)
         button.target = self
 
-        // 监听锁定状态变化，更新菜单栏图标
+        // 监听锁定状态，动态更新图标
         lockService.$isLocked
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
@@ -45,15 +51,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         button.image = image
     }
 
-    // MARK: - 弹出视图设置
+    // MARK: - 弹出视图
 
     @MainActor
     private func setupPopover() {
+        guard let loginItemManager else { return }
         let popover = NSPopover()
-        popover.contentSize = NSSize(width: 240, height: 200)
+        popover.contentSize = NSSize(width: 240, height: 250)
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(
-            rootView: MenuBarView(lockService: lockService)
+            rootView: MenuBarView(
+                lockService: lockService,
+                loginItemManager: loginItemManager
+            )
         )
         self.popover = popover
     }

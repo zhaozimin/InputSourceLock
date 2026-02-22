@@ -5,10 +5,11 @@ import AppKit
 struct MenuBarView: View {
 
     @ObservedObject var lockService: LockService
+    @ObservedObject var loginItemManager: LoginItemManager
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // 标题头部
+            // ── 标题头部 ──────────────────────────────
             HStack(spacing: 8) {
                 Image(systemName: lockService.isLocked ? "lock.fill" : "lock.open.fill")
                     .foregroundStyle(lockService.isLocked ? .red : .secondary)
@@ -22,8 +23,8 @@ struct MenuBarView: View {
 
             Divider()
 
-            // 当前输入法信息
-            VStack(alignment: .leading, spacing: 4) {
+            // ── 当前输入法信息 ─────────────────────────
+            VStack(alignment: .leading, spacing: 3) {
                 Text("当前输入法")
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
@@ -37,7 +38,7 @@ struct MenuBarView: View {
 
             Divider()
 
-            // 锁定开关（使用 LockService 的方法，而非 Binding）
+            // ── 锁定开关 ──────────────────────────────
             HStack {
                 HStack(spacing: 6) {
                     Image(systemName: "lock.shield.fill")
@@ -50,11 +51,7 @@ struct MenuBarView: View {
                 Toggle("", isOn: Binding(
                     get: { lockService.isLocked },
                     set: { newValue in
-                        if newValue {
-                            lockService.lock()
-                        } else {
-                            lockService.unlock()
-                        }
+                        if newValue { lockService.lock() } else { lockService.unlock() }
                     }
                 ))
                 .toggleStyle(.switch)
@@ -63,7 +60,7 @@ struct MenuBarView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
 
-            // 锁定时显示被锁定的输入法名称
+            // 锁定时显示被锁定的输入法
             if lockService.isLocked {
                 HStack(spacing: 4) {
                     Image(systemName: "pin.fill")
@@ -80,7 +77,29 @@ struct MenuBarView: View {
 
             Divider()
 
-            // 退出按钮
+            // ── 开机自启开关 ───────────────────────────
+            HStack {
+                HStack(spacing: 6) {
+                    Image(systemName: "sunrise.fill")
+                        .foregroundStyle(loginItemManager.isEnabled ? .green : .secondary)
+                        .font(.system(size: 13))
+                    Text("开机自启")
+                        .font(.system(size: 13))
+                }
+                Spacer()
+                Toggle("", isOn: Binding(
+                    get: { loginItemManager.isEnabled },
+                    set: { _ in loginItemManager.toggle() }
+                ))
+                .toggleStyle(.switch)
+                .labelsHidden()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+
+            Divider()
+
+            // ── 退出按钮 ──────────────────────────────
             Button {
                 NSApplication.shared.terminate(nil)
             } label: {
