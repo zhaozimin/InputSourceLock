@@ -127,7 +127,7 @@ struct MenuBarView: View {
             .contentShape(Rectangle())
             Spacer()
         }
-        .frame(width: 240, height: 260, alignment: .top)
+        .frame(width: 240, height: 310, alignment: .top)
         .background(.regularMaterial)
     }
 
