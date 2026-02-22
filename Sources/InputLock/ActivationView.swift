@@ -46,7 +46,8 @@ struct ActivationView: View {
                 inputField(
                     icon: "envelope",
                     placeholder: "购买时使用的邮箱",
-                    text: $emailInput
+                    text: $emailInput,
+                    isEmail: true
                 )
 
                 // 序列号输入框
@@ -112,7 +113,8 @@ struct ActivationView: View {
                 inputField(
                     icon: "envelope",
                     placeholder: "购买时使用的邮箱",
-                    text: $emailInput
+                    text: $emailInput,
+                    isEmail: true
                 )
                 errorRow
             }
@@ -187,7 +189,8 @@ struct ActivationView: View {
     private func inputField(
         icon: String,
         placeholder: String,
-        text: Binding<String>
+        text: Binding<String>,
+        isEmail: Bool = false
     ) -> some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
@@ -199,6 +202,12 @@ struct ActivationView: View {
                 .font(.system(size: 13))
                 .autocorrectionDisabled()
                 .onChange(of: text.wrappedValue) { _ in errorMessage = "" }
+            
+            if isEmail && !text.wrappedValue.isEmpty && !isValidEmail(text.wrappedValue) {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundStyle(.red)
+                    .font(.system(size: 13))
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)

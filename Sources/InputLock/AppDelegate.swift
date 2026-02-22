@@ -96,8 +96,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupPopover() {
         guard let loginItemManager, let licenseManager else { return }
         let popover = NSPopover()
-        // 高度从 250 增至 310，以容纳授权状态行
-        popover.contentSize = NSSize(width: 240, height: 310)
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(
             rootView: MenuBarView(
