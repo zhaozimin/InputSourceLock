@@ -24,3 +24,6 @@ xcuserdata/
 Secrets.swift
 *.app
 *.dmg
+
+# 序列号生成脚本含 HMAC 密钥，严禁上传公开仓库
+scripts/generate_license.py

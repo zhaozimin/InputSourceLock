@@ -8,16 +8,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
     private let lockService = LockService()
-    // 延迟初始化，在 @MainActor 的 applicationDidFinishLaunching 中赋值
     private var loginItemManager: LoginItemManager?
+    private var licenseManager: LicenseManager?
     private var cancellables = Set<AnyCancellable>()
 
     @MainActor
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // 在 @MainActor 上下文中初始化 LoginItemManager
-        let manager = LoginItemManager()
-        loginItemManager = manager
-        manager.refreshStatus()
+        // 在 @MainActor 上下文中初始化各管理器
+        let loginManager = LoginItemManager()
+        loginItemManager = loginManager
+        loginManager.refreshStatus()
+
+        let licManager = LicenseManager()
+        licenseManager = licManager
+
         setupStatusItem()
         setupPopover()
     }
@@ -55,14 +59,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @MainActor
     private func setupPopover() {
-        guard let loginItemManager else { return }
+        guard let loginItemManager, let licenseManager else { return }
         let popover = NSPopover()
-        popover.contentSize = NSSize(width: 240, height: 250)
+        // 高度从 250 增至 310，以容纳授权状态行
+        popover.contentSize = NSSize(width: 240, height: 310)
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(
             rootView: MenuBarView(
                 lockService: lockService,
-                loginItemManager: loginItemManager
+                loginItemManager: loginItemManager,
+                licenseManager: licenseManager
             )
         )
         self.popover = popover

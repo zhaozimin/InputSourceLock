@@ -6,6 +6,10 @@ struct MenuBarView: View {
 
     @ObservedObject var lockService: LockService
     @ObservedObject var loginItemManager: LoginItemManager
+    @ObservedObject var licenseManager: LicenseManager
+
+    /// 控制激活弹窗的显示
+    @State private var showActivationSheet: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -56,9 +60,11 @@ struct MenuBarView: View {
                 ))
                 .toggleStyle(.switch)
                 .labelsHidden()
+                .disabled(!licenseManager.canUseLockFeature)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
+            .opacity(licenseManager.canUseLockFeature ? 1.0 : 0.4)
 
             // 锁定时显示被锁定的输入法
             if lockService.isLocked {
@@ -74,6 +80,11 @@ struct MenuBarView: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 8)
             }
+
+            Divider()
+
+            // ── 授权状态区域 ───────────────────────────
+            licenseStatusRow
 
             Divider()
 
@@ -119,5 +130,69 @@ struct MenuBarView: View {
         }
         .frame(width: 240)
         .background(.regularMaterial)
+        .sheet(isPresented: $showActivationSheet) {
+            ActivationView(licenseManager: licenseManager)
+        }
+    }
+
+    // MARK: - 授权状态行
+
+    @ViewBuilder
+    private var licenseStatusRow: some View {
+        if licenseManager.isActivated {
+            // ✅ 已永久激活
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark.seal.fill")
+                    .foregroundStyle(.green)
+                    .font(.system(size: 13))
+                Text("已激活")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.green)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+
+        } else if licenseManager.isInTrial {
+            // ⏳ 试用期中
+            HStack {
+                HStack(spacing: 6) {
+                    Image(systemName: "clock.fill")
+                        .foregroundStyle(.orange)
+                        .font(.system(size: 13))
+                    Text("试用剩余 \(licenseManager.trialDaysRemaining) 天")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.orange)
+                }
+                Spacer()
+                Button("激活") {
+                    showActivationSheet = true
+                }
+                .buttonStyle(.bordered)
+                .font(.system(size: 11))
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+
+        } else {
+            // ❌ 试用到期，功能锁定
+            HStack {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                        .font(.system(size: 13))
+                    Text("试用已到期")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.red)
+                }
+                Spacer()
+                Button("立即激活") {
+                    showActivationSheet = true
+                }
+                .buttonStyle(.borderedProminent)
+                .font(.system(size: 11))
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+        }
     }
 }
