@@ -37,6 +37,8 @@ targets:
           - "*.swift"
     info:
       path: Resources/Info.plist
+    resources:
+      - path: Resources/AppIcon.icns
     entitlements:
       path: Resources/InputLock.entitlements
     settings:
