@@ -32,12 +32,36 @@ trap cleanup EXIT
 cp -R "$APP_BUNDLE" "$STAGING_DIR/"
 ln -s /Applications "$STAGING_DIR/Applications"
 
+# 1. 设置挂载时的 Volume（卷）图标
+ICON_PATH="$PROJECT_ROOT/Resources/AppIcon.icns"
+if [ -f "$ICON_PATH" ]; then
+    cp "$ICON_PATH" "$STAGING_DIR/.VolumeIcon.icns"
+    SetFile -c icnC "$STAGING_DIR/.VolumeIcon.icns" 2>/dev/null || true
+    SetFile -a C "$STAGING_DIR" 2>/dev/null || true
+fi
+
 echo "💿 生成 DMG 镜像文件..."
 DMG_PATH="$PROJECT_ROOT/$DMG_NAME"
 rm -f "$DMG_PATH"
 
 # 使用 hdiutil 创建 DMG
 hdiutil create -volname "$APP_NAME" -srcfolder "$STAGING_DIR" -ov -format UDZO "$DMG_PATH"
+
+# 2. 设置 DMG 文件本身的图标（Finder 中显示的图标）
+if [ -f "$ICON_PATH" ] && [ -f "$DMG_PATH" ]; then
+    echo "🎨 为 $DMG_NAME 文件赋予自定义图标..."
+    SWIFT_SCRIPT="$STAGING_DIR/setIcon.swift"
+    cat > "$SWIFT_SCRIPT" << 'EOF'
+import Cocoa
+let args = CommandLine.arguments
+if args.count == 3 {
+    let icon = NSImage(contentsOfFile: args[1])
+    let success = NSWorkspace.shared.setIcon(icon, forFile: args[2], options: [])
+    print(success ? "Icon set successfully" : "Failed to set icon")
+}
+EOF
+    swift "$SWIFT_SCRIPT" "$ICON_PATH" "$DMG_PATH" || true
+fi
 
 echo "✅ DMG 打包完成！"
 echo "📍 文件位置：$DMG_PATH"
