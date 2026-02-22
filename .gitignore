@@ -22,3 +22,5 @@ xcuserdata/
 *.p8
 *.key
 Secrets.swift
+*.app
+*.dmg
