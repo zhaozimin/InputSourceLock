@@ -4,7 +4,8 @@ import Combine
 
 /// 输入法锁定核心服务
 /// 监听系统输入法切换通知，在锁定模式下自动恢复到锁定的输入法
-final class LockService: ObservableObject {
+/// @unchecked Sendable：全部可变状态均由 @MainActor 保护，跨线程安全
+final class LockService: ObservableObject, @unchecked Sendable {
 
     /// 是否处于锁定状态
     @MainActor
