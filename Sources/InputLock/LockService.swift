@@ -11,6 +11,14 @@ final class LockService: ObservableObject, @unchecked Sendable {
     @MainActor
     @Published var isLocked: Bool = false
 
+    /// 系统中所有的键盘输入法
+    @MainActor
+    @Published var availableSources: [InputSourceItem] = []
+
+    /// 用户在界面上选择要锁定的输入法ID
+    @MainActor
+    @Published var selectedSourceID: String = ""
+
     /// 当前菜单栏显示的输入法名称（实时更新）
     @MainActor
     @Published var currentSourceName: String = InputSourceManager.currentInputSourceName()
@@ -19,9 +27,9 @@ final class LockService: ObservableObject, @unchecked Sendable {
     @MainActor
     @Published var lockedSourceName: String = ""
 
-    /// 锁定时保存的 TISInputSource 引用（仅 MainActor 访问）
+    /// 锁定时保存的输入法 ID
     @MainActor
-    private var lockedSource: TISInputSource?
+    private var lockedSourceID: String?
 
     /// 记录最后一次活跃 App 发生切换的时间，用于判定系统自动切换还是用户手动切换
     @MainActor
@@ -50,6 +58,18 @@ final class LockService: ObservableObject, @unchecked Sendable {
     // nonisolated init，可在任意上下文中调用
     init() {
         startObservingInputSourceChanges()
+        Task { @MainActor in
+            self.refreshAvailableSources()
+        }
+    }
+
+    @MainActor
+    func refreshAvailableSources() {
+        availableSources = InputSourceManager.getAllEnabledInputSources()
+        if let currentRef = InputSourceManager.currentInputSourceRef(),
+           let currentID = InputSourceManager.sourceID(of: currentRef) {
+            selectedSourceID = currentID
+        }
     }
 
     // MARK: - 锁定控制（必须从 MainActor 调用）
@@ -57,10 +77,21 @@ final class LockService: ObservableObject, @unchecked Sendable {
     /// 激活锁定
     @MainActor
     func lock() {
-        lockedSource = InputSourceManager.currentInputSourceRef()
-        lockedSourceName = InputSourceManager.currentInputSourceName()
+        let currentRef = InputSourceManager.currentInputSourceRef()
+        let currentID = currentRef.flatMap { InputSourceManager.sourceID(of: $0) }
+        
+        // 如果 selectedSourceID 不空，优先选择该 ID；否则用当前系统的
+        let targetID = selectedSourceID.isEmpty ? (currentID ?? "") : selectedSourceID
+        
+        lockedSourceID = targetID
+        lockedSourceName = availableSources.first(where: { $0.id == targetID })?.name ?? InputSourceManager.currentInputSourceName()
         currentSourceName = lockedSourceName
         isLocked = true
+        
+        // 确保真正切过去
+        if !targetID.isEmpty {
+            InputSourceManager.selectInputSource(byID: targetID)
+        }
         
         // 启动 FocusWatcher
         let watcher = FocusWatcher()
@@ -75,8 +106,8 @@ final class LockService: ObservableObject, @unchecked Sendable {
                     }
                 } else {
                     // 离开密码框，恢复锁定的输入法
-                    if let locked = self.lockedSource {
-                        InputSourceManager.selectInputSource(locked)
+                    if let lockedID = self.lockedSourceID {
+                        InputSourceManager.selectInputSource(byID: lockedID)
                     }
                 }
             }
@@ -89,7 +120,7 @@ final class LockService: ObservableObject, @unchecked Sendable {
     @MainActor
     func unlock() {
         isLocked = false
-        lockedSource = nil
+        lockedSourceID = nil
         lockedSourceName = ""
         currentSourceName = InputSourceManager.currentInputSourceName()
         isForcedEnglishInPasswordField = false
@@ -138,8 +169,8 @@ final class LockService: ObservableObject, @unchecked Sendable {
                         }
                     } else if self.isForcedEnglishInTerminal {
                         // 离开终端类 App 时，恢复原来锁定的输入法
-                        if let locked = self.lockedSource {
-                            InputSourceManager.selectInputSource(locked)
+                        if let lockedID = self.lockedSourceID {
+                            InputSourceManager.selectInputSource(byID: lockedID)
                         }
                         self.isForcedEnglishInTerminal = false
                     }
@@ -153,7 +184,7 @@ final class LockService: ObservableObject, @unchecked Sendable {
     private func handleInputSourceChanged() async {
         currentSourceName = InputSourceManager.currentInputSourceName()
 
-        guard isLocked, let locked = lockedSource else { return }
+        guard isLocked, let lockedID = lockedSourceID else { return }
 
         // 如果目前正处于因为终端或密码框而强制英文的状态，忽略任何输入法切换（不修改锁定目标）
         if isForcedEnglishInTerminal || isForcedEnglishInPasswordField { return }
@@ -165,11 +196,13 @@ final class LockService: ObservableObject, @unchecked Sendable {
             // 智能判定：如果是系统随着 App 切换导致的自动变动，强行拉回
             if now.timeIntervalSince(lastAppChangeTime) < 0.5 {
                 try? await Task.sleep(for: .milliseconds(50))
-                InputSourceManager.selectInputSource(locked)
+                InputSourceManager.selectInputSource(byID: lockedID)
             } else {
                 // 用户手动通过 Option+Tab 或其他方式明确切换的 -> 接纳为最新的锁定目标
-                if let newSource = InputSourceManager.currentInputSourceRef() {
-                    lockedSource = newSource
+                if let newSource = InputSourceManager.currentInputSourceRef(),
+                   let newID = InputSourceManager.sourceID(of: newSource) {
+                    lockedSourceID = newID
+                    selectedSourceID = newID
                     lockedSourceName = currentName
                 }
             }

@@ -25,18 +25,27 @@ struct MenuBarView: View {
 
             Divider()
 
-            // ── 当前输入法信息 ─────────────────────────
-            VStack(alignment: .leading, spacing: 3) {
-                Text("当前输入法")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
-                Text(lockService.isLocked ? lockService.lockedSourceName : lockService.currentSourceName)
+            // ── 选择锁定输入法 ─────────────────────────
+            HStack {
+                Text("锁定目标")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.primary)
-                    .lineLimit(1)
+                
+                Spacer()
+                
+                Picker("", selection: $lockService.selectedSourceID) {
+                    ForEach(lockService.availableSources, id: \.id) { source in
+                        Text(source.name)
+                            .font(.system(size: 12))
+                            .tag(source.id)
+                    }
+                }
+                .pickerStyle(MenuPickerStyle())
+                .frame(maxWidth: 130)
+                .disabled(lockService.isLocked) // 锁定时不允许修改目标
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
 
             Divider()
 
