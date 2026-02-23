@@ -17,6 +17,7 @@ final class LicenseManager: ObservableObject {
     private let deviceIDKey   = "com.local.inputlock.deviceID"
     private let tokenExpiryKey = "InputLock_TokenExpiry"
     private let firstLaunchKey = "InputLock_FirstLaunchDate"
+    private let installFingerprintKey = "InputLock_InstallFingerprint"
 
     // MARK: - 已发布状态
 
@@ -31,6 +32,7 @@ final class LicenseManager: ObservableObject {
     // MARK: - 初始化
 
     init() {
+        checkInstallationFingerprint()
         refreshStatus()
     }
 
@@ -140,6 +142,31 @@ final class LicenseManager: ObservableObject {
     }
 
     // MARK: - 私有方法
+
+    /// 检查安装指纹：如果 App 被重新安装（文件创建时间变动），则清除旧的激活状态
+    private func checkInstallationFingerprint() {
+        guard let url = Bundle.main.executableURL else { return }
+        do {
+            let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+            if let creationDate = attributes[.creationDate] as? Date {
+                let currentFingerprint = "\(creationDate.timeIntervalSince1970)"
+                let savedFingerprint = UserDefaults.standard.string(forKey: installFingerprintKey)
+                
+                if savedFingerprint != currentFingerprint {
+                    // 指纹不匹配，说明是全新安装或被覆盖安装
+                    // 清除旧的激活状态
+                    UserDefaults.standard.removeObject(forKey: tokenKey)
+                    UserDefaults.standard.removeObject(forKey: tokenExpiryKey)
+                    UserDefaults.standard.removeObject(forKey: firstLaunchKey)
+                    // 保存新的指纹
+                    UserDefaults.standard.set(currentFingerprint, forKey: installFingerprintKey)
+                    print("[LicenseManager] 检测到 App 重新安装，已清除旧的激活状态。")
+                }
+            }
+        } catch {
+            print("[LicenseManager] 无法获取安装指纹: \(error)")
+        }
+    }
 
     /// 获取设备唯一 ID（硬件序列号哈希存入 UserDefaults，脱敏且抗重装）
     private func getOrCreateDeviceID() -> String {
