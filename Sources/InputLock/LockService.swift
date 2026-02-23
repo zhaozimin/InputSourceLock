@@ -35,6 +35,14 @@ final class LockService: ObservableObject, @unchecked Sendable {
     @MainActor
     private var isForcedEnglishInTerminal: Bool = false
 
+    /// 标记当前是否因为进入了密码输入框而被迫切换为英文
+    @MainActor
+    private var isForcedEnglishInPasswordField: Bool = false
+
+    /// 密码框焦点监听器
+    @MainActor
+    private var focusWatcher: FocusWatcher?
+
     /// 通知观察者 token
     private var observer: NSObjectProtocol?
     private var workspaceObserver: NSObjectProtocol?
@@ -53,6 +61,28 @@ final class LockService: ObservableObject, @unchecked Sendable {
         lockedSourceName = InputSourceManager.currentInputSourceName()
         currentSourceName = lockedSourceName
         isLocked = true
+        
+        // 启动 FocusWatcher
+        let watcher = FocusWatcher()
+        watcher.onPasswordFieldFocusChanged = { [weak self] isInPassword in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.isForcedEnglishInPasswordField = isInPassword
+                if isInPassword {
+                    // 进入密码框，强制切换为英文
+                    if let englishSource = InputSourceManager.getEnglishInputSource() {
+                        InputSourceManager.selectInputSource(englishSource)
+                    }
+                } else {
+                    // 离开密码框，恢复锁定的输入法
+                    if let locked = self.lockedSource {
+                        InputSourceManager.selectInputSource(locked)
+                    }
+                }
+            }
+        }
+        watcher.start()
+        focusWatcher = watcher
     }
 
     /// 取消锁定
@@ -62,6 +92,10 @@ final class LockService: ObservableObject, @unchecked Sendable {
         lockedSource = nil
         lockedSourceName = ""
         currentSourceName = InputSourceManager.currentInputSourceName()
+        isForcedEnglishInPasswordField = false
+        isForcedEnglishInTerminal = false
+        focusWatcher?.stop()
+        focusWatcher = nil
     }
 
     // MARK: - 私有方法
@@ -121,8 +155,8 @@ final class LockService: ObservableObject, @unchecked Sendable {
 
         guard isLocked, let locked = lockedSource else { return }
 
-        // 如果目前正处于因为终端而强制英文的状态，忽略任何输入法切换（不修改锁定目标）
-        if isForcedEnglishInTerminal { return }
+        // 如果目前正处于因为终端或密码框而强制英文的状态，忽略任何输入法切换（不修改锁定目标）
+        if isForcedEnglishInTerminal || isForcedEnglishInPasswordField { return }
 
         let currentName = InputSourceManager.currentInputSourceName()
         if currentName != lockedSourceName {
