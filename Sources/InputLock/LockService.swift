@@ -191,21 +191,10 @@ final class LockService: ObservableObject, @unchecked Sendable {
 
         let currentName = InputSourceManager.currentInputSourceName()
         if currentName != lockedSourceName {
-            let now = Date()
-            
-            // 智能判定：如果是系统随着 App 切换导致的自动变动，强行拉回
-            if now.timeIntervalSince(lastAppChangeTime) < 0.5 {
-                try? await Task.sleep(for: .milliseconds(50))
-                InputSourceManager.selectInputSource(byID: lockedID)
-            } else {
-                // 用户手动通过 Option+Tab 或其他方式明确切换的 -> 接纳为最新的锁定目标
-                if let newSource = InputSourceManager.currentInputSourceRef(),
-                   let newID = InputSourceManager.sourceID(of: newSource) {
-                    lockedSourceID = newID
-                    selectedSourceID = newID
-                    lockedSourceName = currentName
-                }
-            }
+            // 被动防御机制：
+            // 只要没主动在 UI 选别的东西，任何在没有被迫英语状态下的输入法改变（无论是用户手动切了、还是系统竞态条件发的通知），
+            // 全部简单粗暴地把它拉回到死锁的那个 ID。
+            InputSourceManager.selectInputSource(byID: lockedID)
         }
     }
 
