@@ -1,0 +1,10 @@
+# 环境变量（含密码，严禁提交）
+.env
+
+# 数据库文件（服务器本地数据）
+*.sqlite
+database.sqlite
+
+# Node.js
+node_modules/
+npm-debug.log*
