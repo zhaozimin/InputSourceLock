@@ -61,6 +61,9 @@ PLIST="$APP_BUNDLE/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Add :NSPrincipalClass          string NSApplication"  "$PLIST"
 /usr/libexec/PlistBuddy -c "Add :NSHumanReadableCopyright  string Copyright © 2026" "$PLIST"
 
+/usr/libexec/PlistBuddy -c "Add :NSAppTransportSecurity dict" "$PLIST"
+/usr/libexec/PlistBuddy -c "Add :NSAppTransportSecurity:NSAllowsArbitraryLoads bool true" "$PLIST"
+
 echo "✍️  [5/6] Ad-hoc 代码签名..."
 codesign --sign - --force --deep "$APP_BUNDLE"
 
