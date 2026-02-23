@@ -204,3 +204,27 @@ struct MenuBarView: View {
         }
     }
 }
+
+// MARK: - 自定义 iOS 风格纯绿开关
+struct GreenSwitchToggleStyle: ToggleStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack {
+            configuration.label
+            Spacer()
+            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                .fill(configuration.isOn ? Color(red: 52/255, green: 199/255, blue: 89/255) : Color.gray.opacity(0.3)) // iOS 原生翠绿
+                .frame(width: 32, height: 20)
+                .overlay(
+                    Circle()
+                        .fill(Color.white)
+                        .padding(2)
+                        .offset(x: configuration.isOn ? 6 : -6)
+                        .shadow(color: .black.opacity(0.15), radius: 2, x: 0, y: 1)
+                        .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isOn)
+                )
+                .onTapGesture {
+                    configuration.isOn.toggle()
+                }
+        }
+    }
+}

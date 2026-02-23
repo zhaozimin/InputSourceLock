@@ -86,14 +86,15 @@ final class LockService: ObservableObject, @unchecked Sendable {
             object: nil,
             queue: .main
         ) { [weak self] notification in
+            let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+            let bundleID = app?.bundleIdentifier
+            
             Task { @MainActor in
                 guard let self = self else { return }
                 self.lastAppChangeTime = Date()
                 
                 // 终端类 App 强制英文逻辑
-                if self.isLocked,
-                   let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
-                   let bundleID = app.bundleIdentifier {
+                if self.isLocked, let bundleID = bundleID {
                     
                     let terminalApps = ["com.apple.Terminal", "com.googlecode.iterm2"]
                     if terminalApps.contains(bundleID) {
@@ -132,19 +133,10 @@ final class LockService: ObservableObject, @unchecked Sendable {
                 try? await Task.sleep(for: .milliseconds(50))
                 InputSourceManager.selectInputSource(locked)
             } else {
-                // 用户手动切换的防误触逻辑（双击才生效）
-                if now.timeIntervalSince(lastManualSwitchTime) < 0.4 {
-                    // 确认是双击（0.4 秒内连按），允许更换锁定目标！
-                    if let newSource = InputSourceManager.currentInputSourceRef() {
-                        lockedSource = newSource
-                        lockedSourceName = currentName
-                        lastManualSwitchTime = .distantPast // 重置，防止连续触发
-                    }
-                } else {
-                    // 只是误触一次，强行拉回并记录这次点击的时间
-                    lastManualSwitchTime = now
-                    try? await Task.sleep(for: .milliseconds(50))
-                    InputSourceManager.selectInputSource(locked)
+                // 用户手动通过 Option+Tab 或其他方式明确切换的 -> 接纳为最新的锁定目标
+                if let newSource = InputSourceManager.currentInputSourceRef() {
+                    lockedSource = newSource
+                    lockedSourceName = currentName
                 }
             }
         }

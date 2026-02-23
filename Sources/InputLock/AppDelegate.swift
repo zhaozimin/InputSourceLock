@@ -30,6 +30,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             await licManager.verifyTokenIfNeeded()
         }
 
+        // 启动全局键盘双击 Option + Tab 的拦截服务
+        KeyboardInterceptor.shared.start()
+
         // 注入默认的 Edit 菜单以支持快捷键（如 Cmd+C/V）
         setupMainMenu()
     }

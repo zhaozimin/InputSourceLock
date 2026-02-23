@@ -17,12 +17,14 @@
 		736DA0DA4CFC8263AD46B3F1 /* ActivationWindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7DB5E90D404DB87D035A2B2 /* ActivationWindowManager.swift */; };
 		8ACA2477FFE5E53F6F269891 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD39E1638B8EC16BBA519D66 /* main.swift */; };
 		A306548525481B81C185E18C /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E82CE99A1F001AE89FBEDEE6 /* MenuBarView.swift */; };
+		B7E5EF6D40446FC96AC94326 /* KeyboardInterceptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29764EB253C9D2C439223DDB /* KeyboardInterceptor.swift */; };
 		F6F5C6AB86873EFD9735469E /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ED9CDEE8BF8B659DB9DF5D59 /* ServiceManagement.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		14D6207A4F8EE53D434F8E0B /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		182E65E9301AA4CF42EC1A7F /* InputLock.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = InputLock.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		29764EB253C9D2C439223DDB /* KeyboardInterceptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardInterceptor.swift; sourceTree = "<group>"; };
 		3A9A6EC46BD8D0BB54CE7C47 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
 		8B9359F83347BA745BA65C03 /* InputSourceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputSourceManager.swift; sourceTree = "<group>"; };
 		A5716841369D4A8F3AC7E68E /* LockService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockService.swift; sourceTree = "<group>"; };
@@ -64,6 +66,7 @@
 				A7DB5E90D404DB87D035A2B2 /* ActivationWindowManager.swift */,
 				14D6207A4F8EE53D434F8E0B /* AppDelegate.swift */,
 				8B9359F83347BA745BA65C03 /* InputSourceManager.swift */,
+				29764EB253C9D2C439223DDB /* KeyboardInterceptor.swift */,
 				D215F86EEE65B6AC180C7BAA /* LicenseManager.swift */,
 				A5716841369D4A8F3AC7E68E /* LockService.swift */,
 				AF71BC35163981651A9EC260 /* LoginItemManager.swift */,
@@ -162,6 +165,7 @@
 				736DA0DA4CFC8263AD46B3F1 /* ActivationWindowManager.swift in Sources */,
 				42717F013C7FE1287A6ABD52 /* AppDelegate.swift in Sources */,
 				0330230E689324C094AB9E86 /* InputSourceManager.swift in Sources */,
+				B7E5EF6D40446FC96AC94326 /* KeyboardInterceptor.swift in Sources */,
 				38971446514E66F7EA0362ED /* LicenseManager.swift in Sources */,
 				5AD5E45738971834C91901F5 /* LockService.swift in Sources */,
 				191D8E5ADCC99C190E41B3C8 /* LoginItemManager.swift in Sources */,
