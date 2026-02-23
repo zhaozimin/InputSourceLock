@@ -57,6 +57,7 @@ struct MenuBarView: View {
                     }
                 ))
                 .toggleStyle(.switch)
+                .tint(.green)
                 .labelsHidden()
                 .disabled(!licenseManager.canUseLockFeature)
             }
@@ -101,6 +102,7 @@ struct MenuBarView: View {
                     set: { _ in loginItemManager.toggle() }
                 ))
                 .toggleStyle(.switch)
+                .tint(.green)
                 .labelsHidden()
             }
             .padding(.horizontal, 16)

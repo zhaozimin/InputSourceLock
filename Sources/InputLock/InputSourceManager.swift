@@ -30,4 +30,14 @@ enum InputSourceManager {
         // kTISPropertyLocalizedName 返回的是 CFString
         return (Unmanaged<CFString>.fromOpaque(ptr).takeUnretainedValue() as String)
     }
+
+    /// 获取系统自带的英文（ABC）输入法的 TISInputSource 引用
+    static func getEnglishInputSource() -> TISInputSource? {
+        let properties = [kTISPropertyInputSourceID: "com.apple.keylayout.ABC"] as CFDictionary
+        guard let list = TISCreateInputSourceList(properties, false)?.takeRetainedValue() as? [TISInputSource],
+              let englishSource = list.first else {
+            return nil
+        }
+        return englishSource
+    }
 }
