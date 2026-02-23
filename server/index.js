@@ -201,6 +201,14 @@ app.post('/recover', async (req, res) => {
         const now = Math.floor(Date.now() / 1000);
         const twentyFourHoursAgo = now - 24 * 60 * 60;
 
+        // 【关键修复】: 确保即使没有重启 Node 进程，或者旧的 init.sql 没有生效，表也一定存在！
+        await dbRun(`
+            CREATE TABLE IF NOT EXISTS recovery_logs (
+                email TEXT NOT NULL,
+                sent_at INTEGER NOT NULL
+            )
+        `);
+
         // 检查频率：过去 24 小时内是否发过
         const logRow = await dbGet(
             "SELECT COUNT(*) as count FROM recovery_logs WHERE lower(email) = lower(?) AND sent_at >= ?",
