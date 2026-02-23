@@ -10,7 +10,7 @@ final class LicenseManager: ObservableObject {
     // MARK: - 常量
 
     /// ⚠️ 部署 Workers 后，将此 URL 替换为你的 Workers 地址
-    static let apiBaseURL = "https://api.cklaozhao.me"
+    static let apiBaseURL = "http://api.cklaozhao.me/api"
 
     private let trialDurationDays = 7
     private let tokenKey      = "com.local.inputlock.authToken"
