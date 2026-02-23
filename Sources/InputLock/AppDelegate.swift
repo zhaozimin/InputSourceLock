@@ -6,7 +6,7 @@ import Combine
 final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var statusItem: NSStatusItem?
-    private var popover: NSPopover?
+    private var window: NSWindow?
     private let lockService = LockService()
     private var loginItemManager: LoginItemManager?
     private var licenseManager: LicenseManager?
@@ -95,31 +95,65 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @MainActor
     private func setupPopover() {
         guard let loginItemManager, let licenseManager else { return }
-        let popover = NSPopover()
-        popover.behavior = .transient
-        popover.contentViewController = NSHostingController(
+        
+        let hostingController = NSHostingController(
             rootView: MenuBarView(
                 lockService: lockService,
                 loginItemManager: loginItemManager,
                 licenseManager: licenseManager
             )
         )
-        self.popover = popover
+        
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 280, height: 300), // Height will adjust to content
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        window.contentViewController = hostingController
+        window.backgroundColor = .clear
+        window.isOpaque = false
+        window.hasShadow = true
+        window.level = .floating
+        
+        // 当点击其他地方时自动隐藏
+        window.collectionBehavior = [.canJoinAllSpaces, .ignoresCycle]
+        
+        self.window = window
+        
+        // 监听焦点丢失
+        NotificationCenter.default.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in
+                self?.closePopover(sender: nil)
+            }
+        }
     }
 
     @MainActor
     @objc private func togglePopover() {
-        guard let popover, let button = statusItem?.button else { return }
-        if popover.isShown {
-            popover.performClose(nil)
+        guard let window = self.window, let button = statusItem?.button else { return }
+        
+        if window.isVisible {
+            closePopover(sender: nil)
         } else {
-            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-            popover.contentViewController?.view.window?.makeKey()
+            // 精确计算位置
+            let buttonFrame = button.window?.convertToScreen(button.frame) ?? .zero
+            let windowSize = window.frame.size
+            
+            // X: 居中对齐图标
+            let x = buttonFrame.midX - windowSize.width / 2
+            // Y: 图标底部，加上一个很小的间距，比如 2px
+            let y = buttonFrame.minY - windowSize.height - 2
+            
+            window.setFrameOrigin(NSPoint(x: x, y: y))
+            
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
         }
     }
 
     @MainActor
     func closePopover(sender: Any?) {
-        popover?.performClose(sender)
+        window?.orderOut(sender)
     }
 }

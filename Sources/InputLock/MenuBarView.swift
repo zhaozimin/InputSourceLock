@@ -126,8 +126,10 @@ struct MenuBarView: View {
             .padding(.vertical, 10)
             .contentShape(Rectangle())
         }
-        .frame(width: 240, alignment: .top)
+        .frame(width: 250, alignment: .top)
         .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .padding(8) // 给阴影留出空间，如果不留空间，悬浮窗的边缘截断会很生硬
     }
 
     // MARK: - 授权状态行
