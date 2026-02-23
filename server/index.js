@@ -3,7 +3,7 @@
  * 接口：POST /activate | POST /verify | POST /recover
  */
 
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
