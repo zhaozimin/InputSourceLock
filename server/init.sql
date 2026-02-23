@@ -24,12 +24,17 @@ CREATE INDEX IF NOT EXISTS idx_activations_serial ON activations(serial);
 CREATE INDEX IF NOT EXISTS idx_activations_token_device ON activations(token, device_id);
 
 CREATE TABLE IF NOT EXISTS device_changes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
     serial TEXT NOT NULL,
     year INTEGER NOT NULL,
-    count INTEGER NOT NULL DEFAULT 0,
-    UNIQUE(serial, year),
+    count INTEGER DEFAULT 0,
+    PRIMARY KEY (serial, year),
     FOREIGN KEY(serial) REFERENCES licenses(serial) ON DELETE CASCADE
+);
+
+-- 发送找回邮件记录表（用于限制频率）
+CREATE TABLE IF NOT EXISTS recovery_logs (
+    email TEXT NOT NULL,
+    sent_at INTEGER NOT NULL
 );
 
 -- 默认测试数据 (方便立刻测试)

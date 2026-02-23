@@ -181,6 +181,7 @@ app.post('/verify', async (req, res) => {
 app.post('/recover', async (req, res) => {
     try {
         const { email } = req.body || {};
+        console.log("[Recover] 收到请求，邮箱:", email);
         if (!email) {
             return res.status(400).json({ error: "请提供邮箱" });
         }
@@ -189,11 +190,29 @@ app.post('/recover', async (req, res) => {
             "SELECT serial FROM licenses WHERE LOWER(email) = LOWER(?)",
             [email]
         );
+        console.log("[Recover] 数据库查询结果:", JSON.stringify(row));
 
         // 无论是否找到都提示已发送
         if (!row) {
+            console.log("[Recover] 未找到邮箱，提前返回，不发邮件");
             return res.json({ status: "sent" });
         }
+
+        const now = Math.floor(Date.now() / 1000);
+        const twentyFourHoursAgo = now - 24 * 60 * 60;
+
+        // 检查频率：过去 24 小时内是否发过
+        const logRow = await dbGet(
+            "SELECT COUNT(*) as count FROM recovery_logs WHERE lower(email) = lower(?) AND sent_at >= ?",
+            [email, twentyFourHoursAgo]
+        );
+
+        if (logRow && logRow.count > 0) {
+            console.log("[Recover] 拦截：24小时内已发过邮件。");
+            return res.status(429).json({ error: "24 小时内只能发送一次找回邮件，请查收您的邮箱或稍后再试" });
+        }
+
+        console.log("[Recover] 找到序列号:", row.serial, "| SMTP Host:", process.env.SMTP_HOST, "| From:", process.env.FROM_EMAIL);
 
         const mailOptions = {
             from: FROM_EMAIL,
@@ -210,10 +229,16 @@ app.post('/recover', async (req, res) => {
             </div>`
         };
 
-        await transporter.sendMail(mailOptions);
+        console.log("[Recover] 正在调用 sendMail...");
+        const info = await transporter.sendMail(mailOptions);
+        console.log("[Recover] sendMail 成功，messageId:", info.messageId);
+
+        // 记录发送时间
+        await dbRun("INSERT INTO recovery_logs (email, sent_at) VALUES (?, ?)", [email, now]);
+
         res.json({ status: "sent" });
     } catch (error) {
-        console.error("Recover Error:", error);
+        console.error("[Recover] 发生错误:", error.message, error.code);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
