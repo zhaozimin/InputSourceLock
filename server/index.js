@@ -7,7 +7,7 @@ require('dotenv').config();
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
-const fetch = require('node-fetch');
+const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -21,7 +21,18 @@ const TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60;
 
 // 配置说明 (可以放在 .env 文件里)
 const PORT = process.env.PORT || 3000;
-const RESEND_API_KEY = process.env.RESEND_API_KEY || 're_your_api_key_here';
+
+// --- SMTP 邮件配置 ---
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.resend.com',
+    port: parseInt(process.env.SMTP_PORT || '465'),
+    secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+    auth: {
+        user: process.env.SMTP_USER || 'resend',
+        pass: process.env.SMTP_PASS || '',
+    },
+});
+
 const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@yourdomain.com';
 const MAX_DEVICE_CHANGES_PER_YEAR = parseInt(process.env.MAX_DEVICE_CHANGES_PER_YEAR || '2');
 
@@ -179,34 +190,27 @@ app.post('/recover', async (req, res) => {
             [email]
         );
 
+        // 无论是否找到都提示已发送
         if (!row) {
             return res.json({ status: "sent" });
         }
 
-        const html = `
-        <div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:32px">
-          <h2 style="color:#1d1d1f">🔑 您的序列号</h2>
-          <p>您申请找回「输入法锁定」的序列号，以下是您的专属序列号：</p>
-          <div style="background:#f5f5f7;border-radius:8px;padding:16px 24px;margin:16px 0">
-            <code style="font-size:20px;letter-spacing:2px;color:#0066cc">${row.serial}</code>
-          </div>
-          <p style="color:#6e6e73;font-size:13px">请妥善保存此序列号。<br>若非本人操作，请忽略此邮件。</p>
-        </div>`;
+        const mailOptions = {
+            from: FROM_EMAIL,
+            to: email,
+            subject: "您的「输入法锁定」序列号",
+            html: `
+            <div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:32px">
+              <h2 style="color:#1d1d1f">🔑 您的序列号</h2>
+              <p>您申请找回「输入法锁定」的序列号，以下是您的专属序列号：</p>
+              <div style="background:#f5f5f7;border-radius:8px;padding:16px 24px;margin:16px 0">
+                <code style="font-size:20px;letter-spacing:2px;color:#0066cc">${row.serial}</code>
+              </div>
+              <p style="color:#6e6e73;font-size:13px">请妥善保存此序列号。<br>若非本人操作，请忽略此邮件。</p>
+            </div>`
+        };
 
-        await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${RESEND_API_KEY}`,
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                from: FROM_EMAIL,
-                to: email,
-                subject: "您的「输入法锁定」序列号",
-                html,
-            }),
-        });
-
+        await transporter.sendMail(mailOptions);
         res.json({ status: "sent" });
     } catch (error) {
         console.error("Recover Error:", error);
