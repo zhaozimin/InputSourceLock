@@ -100,6 +100,13 @@ final class FocusWatcher {
         axObserver = nil
         observedApp = nil
         currentAppPID = 0
+        
+        // 关键修复：当彻底解绑一个 App 的观察者时，说明用户切走了。
+        // 如果切走前焦点在密码框里，必须强行触发“离开密码框”的消息，给 LockService 解锁。
+        if isInPasswordField {
+            isInPasswordField = false
+            onPasswordFieldFocusChanged?(false)
+        }
     }
 
     // MARK: - 焦点判断
