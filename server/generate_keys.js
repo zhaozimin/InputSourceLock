@@ -10,7 +10,7 @@ const outputFile = path.join(__dirname, 'licenses_10000.txt');
 function generateRandomKey() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let key = '';
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 16; i++) {
         if (i > 0 && i % 4 === 0) key += '-';
         key += chars.charAt(Math.floor(Math.random() * chars.length));
     }
