@@ -61,7 +61,8 @@ final class LicenseManager: ObservableObject {
         let body: [String: String] = [
             "email": email,
             "serial": serial.uppercased(),
-            "device_id": deviceID
+            "device_id": deviceID,
+            "app_id": "InputLock"
         ]
 
         let data = try await postRequest(path: "/activate", body: body)
@@ -91,7 +92,7 @@ final class LicenseManager: ObservableObject {
 
     /// 找回序列号（只需邮箱，服务器发邮件）
     func recoverKey(email: String) async throws {
-        let body = ["email": email]
+        let body = ["email": email, "app_id": "InputLock"]
         let data = try await postRequest(path: "/recover", body: body)
 
         struct RecoverResponse: Decodable {
@@ -117,7 +118,7 @@ final class LicenseManager: ObservableObject {
         // 临近过期，联网续签
         do {
             let deviceID = getOrCreateDeviceID()
-            let body = ["token": token, "device_id": deviceID]
+            let body = ["token": token, "device_id": deviceID, "app_id": "InputLock"]
             let data = try await postRequest(path: "/verify", body: body)
 
             struct VerifyResponse: Decodable {
@@ -145,22 +146,23 @@ final class LicenseManager: ObservableObject {
 
     /// 检查安装指纹：如果 App 被重新安装（文件创建时间变动），则清除旧的激活状态
     private func checkInstallationFingerprint() {
-        guard let url = Bundle.main.executableURL else { return }
+        let url = Bundle.main.bundleURL
         do {
             let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
-            if let creationDate = attributes[.creationDate] as? Date {
-                let currentFingerprint = "\(creationDate.timeIntervalSince1970)"
+            if let creationDate = attributes[.creationDate] as? Date,
+               let modificationDate = attributes[.modificationDate] as? Date {
+                let currentFingerprint = "\(creationDate.timeIntervalSince1970)_\(modificationDate.timeIntervalSince1970)"
                 let savedFingerprint = UserDefaults.standard.string(forKey: installFingerprintKey)
                 
                 if savedFingerprint != currentFingerprint {
                     // 指纹不匹配，说明是全新安装或被覆盖安装
-                    // 清除旧的激活状态
+                    // 清除旧的激活状态和试用期记录
                     UserDefaults.standard.removeObject(forKey: tokenKey)
                     UserDefaults.standard.removeObject(forKey: tokenExpiryKey)
                     UserDefaults.standard.removeObject(forKey: firstLaunchKey)
                     // 保存新的指纹
                     UserDefaults.standard.set(currentFingerprint, forKey: installFingerprintKey)
-                    print("[LicenseManager] 检测到 App 重新安装，已清除旧的激活状态。")
+                    print("[LicenseManager] 检测到 App 重新安装或更新包，已彻底重置 7 天试用期与旧激活状态。")
                 }
             }
         } catch {

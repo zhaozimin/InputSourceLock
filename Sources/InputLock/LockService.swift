@@ -9,7 +9,11 @@ final class LockService: ObservableObject, @unchecked Sendable {
 
     /// 是否处于锁定状态
     @MainActor
-    @Published var isLocked: Bool = false
+    @Published var isLocked: Bool = UserDefaults.standard.bool(forKey: "isLocked") {
+        didSet {
+            UserDefaults.standard.set(isLocked, forKey: "isLocked")
+        }
+    }
 
     /// 系统中所有的键盘输入法
     @MainActor
@@ -17,7 +21,11 @@ final class LockService: ObservableObject, @unchecked Sendable {
 
     /// 用户在界面上选择要锁定的输入法ID
     @MainActor
-    @Published var selectedSourceID: String = ""
+    @Published var selectedSourceID: String = UserDefaults.standard.string(forKey: "selectedSourceID") ?? "" {
+        didSet {
+            UserDefaults.standard.set(selectedSourceID, forKey: "selectedSourceID")
+        }
+    }
 
     /// 当前菜单栏显示的输入法名称（实时更新）
     @MainActor
@@ -60,15 +68,21 @@ final class LockService: ObservableObject, @unchecked Sendable {
         startObservingInputSourceChanges()
         Task { @MainActor in
             self.refreshAvailableSources()
+            // 如果退出前是锁定状态，跟随启动自动恢复锁定
+            if self.isLocked {
+                self.lock()
+            }
         }
     }
 
     @MainActor
     func refreshAvailableSources() {
         availableSources = InputSourceManager.getAllEnabledInputSources()
-        if let currentRef = InputSourceManager.currentInputSourceRef(),
-           let currentID = InputSourceManager.sourceID(of: currentRef) {
-            selectedSourceID = currentID
+        if selectedSourceID.isEmpty {
+            if let currentRef = InputSourceManager.currentInputSourceRef(),
+               let currentID = InputSourceManager.sourceID(of: currentRef) {
+                selectedSourceID = currentID
+            }
         }
     }
 
